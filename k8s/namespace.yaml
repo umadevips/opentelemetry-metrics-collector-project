@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-otel-demo
+  labels:
+    name: ml-otel-demo
+    purpose: opentelemetry-challenge

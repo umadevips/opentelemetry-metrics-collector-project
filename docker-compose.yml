@@ -1,0 +1,82 @@
+services:
+  # OpenTelemetry Collector - receives OTLP metrics and exports to Prometheus
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.138.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "8889:8889" # Prometheus metrics exporter
+      - "8888:8888" # Collector self-telemetry
+    networks:
+      - ml-otel-network
+    restart: unless-stopped
+
+  # Prometheus - scrapes metrics from OTel Collector for verification
+  prometheus:
+    image: prom/prometheus:v3.7.2
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - ml-otel-network
+    restart: unless-stopped
+    depends_on:
+      - otel-collector
+
+  # Mock ML Training Job - writes metrics to shared volume
+  mock-ml-job:
+    image: ghcr.io/openteams-ai/mock-ml-job:latest
+    container_name: mock-ml-job
+    environment:
+      - JOB_ID=training-job-001
+      - MODEL_NAME=resnet-50
+      - DATASET=imagenet
+      - METRICS_FILE_PATH=/shared/metrics/current.json
+      - WRITE_INTERVAL=10
+      - TOTAL_EPOCHS=10
+      - BATCHES_PER_EPOCH=50
+    volumes:
+      - metrics-data:/shared/metrics
+    networks:
+      - ml-otel-network
+    restart: unless-stopped
+
+  # Add your sidecar here
+  sidecar-python:
+    build:
+      context: ./sidecar-python
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - OTEL_SERVICE_NAME=ml-metrics-bridge
+      - METRICS_FILE_PATH=/shared/metrics/current.json
+      - COLLECTION_INTERVAL=10
+      - LOG_LEVEL=INFO
+    volumes:
+      - metrics-data:/shared/metrics:ro
+    ports:
+      - "8000:8000" # sidecar prometheus endpoint for internal metrics
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+
+volumes:
+  metrics-data:
+    driver: local
+  prometheus-data:
+    driver: local
+
+networks:
+  ml-otel-network:
+    driver: bridge

@@ -1,0 +1,20 @@
+{
+  "timestamp": "2024-10-22T10:30:00Z",
+  "job_metadata": {
+    "job_id": "training-job-123",
+    "model_name": "resnet-50",
+    "dataset": "imagenet",
+    "start_time": "2024-10-22T10:00:00Z"
+  },
+  "training_metrics": {
+    "epoch": 5,
+    "batch_number": 150,
+    "training_loss": 0.342,
+    "validation_loss": 0.389,
+    "accuracy": 0.876,
+    "learning_rate": 0.001,
+    "gpu_utilization": 0.94,
+    "processing_time_ms": 245,
+    "samples_per_second": 156.2
+  }
+}
