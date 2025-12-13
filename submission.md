@@ -6,7 +6,7 @@ Your documentation here
 # Submission: Metrics Bridge Sidecar Implementation using Python
 
 ## Overview
-    This implementation provides a production ready sidecar container which collects the ML training metrics from a shared json file, converts the metrics to telemtry supported instruments and sends to the otel collector using otlp and further sends these metrics to the backend of our choice which is prometheus in this use case.
+This implementation provides a production ready sidecar container which collects the ML training metrics from a shared json file, converts the metrics to telemtry supported instruments and sends to the otel collector using otlp and further sends these metrics to the backend of our choice which is prometheus in this use case.
 
 ### Architecture
 
