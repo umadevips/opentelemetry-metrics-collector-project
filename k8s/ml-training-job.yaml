@@ -25,46 +25,6 @@ data:
 # - Don't worry about  a registry for the sidecar image, just put the image name.
 #   We will push to a registry when evaluating
 
- # OpenTelemetry Metrics Bridge Sidecar
-        - name: otel-metrics-bridge
-          image: ml-metrics-bridge:latest
-          imagePullPolicy: IfNotPresent
-          env:
-            # OpenTelemetry configuration
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "otel-collector:4317"
-            - name: OTEL_SERVICE_NAME
-              value: "ml-metrics-bridge"
-            
-            # Metrics file configuration
-            - name: METRICS_FILE_PATH
-              value: "/shared/metrics/current.json"
-            
-            # Collection interval
-            - name: COLLECTION_INTERVAL
-              value: "10"
-            
-            # Logging level
-            - name: LOG_LEVEL
-              value: "INFO"
-          volumeMounts:
-            - name: metrics-volume
-              mountPath: /shared/metrics
-              readOnly: true
-          resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "256Mi"
-              cpu: "200m"
-          # Sidecar should continue running even if ML job completes
-          # This ensures final metrics are exported
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "sleep 15"]
-
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -107,3 +67,42 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1000m"
+# OpenTelemetry Metrics Bridge Sidecar
+        - name: otel-metrics-bridge
+          image: ml-metrics-bridge:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            # OpenTelemetry configuration
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "otel-collector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "ml-metrics-bridge"
+            
+            # Metrics file configuration
+            - name: METRICS_FILE_PATH
+              value: "/shared/metrics/current.json"
+            
+            # Collection interval
+            - name: COLLECTION_INTERVAL
+              value: "10"
+            
+            # Logging level
+            - name: LOG_LEVEL
+              value: "INFO"
+          volumeMounts:
+            - name: metrics-volume
+              mountPath: /shared/metrics
+              readOnly: true
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          # Sidecar should continue running even if ML job completes
+          # This ensures final metrics are exported
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 15"]
