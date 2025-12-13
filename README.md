@@ -1,4 +1,3 @@
-"# opentelemetry-metrics-collector-project" 
 ML OpenTelemetry Sidecar Challenge
 Candidate Instructions
 Welcome! This is a hands-on coding challenge designed to evaluate your ability to work with OpenTelemetry in a real-world ML infrastructure scenario.
