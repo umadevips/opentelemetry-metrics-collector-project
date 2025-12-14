@@ -143,53 +143,54 @@ Environment based configuration with validation
 
 ### Error handling strategy
 **1. File not found**  
-    if not metrics_path.exists():
-        self.logger.debug("Metrics file does not exist yet")
+    if not metrics_path.exists():  
+        self.logger.debug("Metrics file does not exist yet")  
         return 
             None  
 **Scenario**: Sidecar starts before ML job writes first metrics  
 **Handling**: Log at DEBUG level, continue polling. This is expected behaviour.
 
-**2. Malformed Json**
-except json.JSONDecodeError as e:
-    self.logger.error(f"Failed to parse metrics JSON: {e}")
-    return None  
+**2. Malformed Json**  
+    except json.JSONDecodeError as e:  
+        self.logger.error(f"Failed to parse metrics JSON: {e}")  
+        return  
+            None  
 **Scenario**: Partial write, corrupted file, invalid format  
 **Handling**: Log error, skip this iteration, continue polling
 
-**3. Network failure (OTLP export)**
-Opentelemetry SDK handles exportretries automatically
-    - Queuing of metrics during outages
+**3. Network failure (OTLP export)**  
+Opentelemetry SDK handles exportretries automatically  
+    - Queuing of metrics during outages  
     - Automatic reconnection  
 **Handling**: rely on SDK and log only critical features
 
-**4. Resource exhaustion**
+**4. Resource exhaustion**  
 resources:
-  requests:
-    memory: "128Mi"
-    cpu: "100m"
-  limits:
-    memory: "256Mi"
-    cpu: "200m"  
-**Protection**:
-    - Memory limits prevent OOM
+    requests:
+        memory: "128Mi"
+        cpu: "100m"
+    limits:
+        memory: "256Mi"
+        cpu: "200m"  
+**Protection**:  
+    - Memory limits prevent OOM  
     - CPU limits prevent starving main container
     
-**5. Graceful shutdown**
-signal.signal(signal.SIGTERM, self._signal_handler)
-signal.signal(signal.SIGINT, self._signal_handler)
-
-**On SIGTERM/SIGINIT:**
+**5. Graceful shutdown**  
+    signal.signal(signal.SIGTERM, self._signal_handler)  
+    signal.signal(signal.SIGINT, self._signal_handler)  
+    **On SIGTERM/SIGINIT:**  
     1. Stop collection loop  
     2. Flush remaining metrics via provider.shutdown()  
     3. Complete pending exports  
     4. Exit cleanly
 
-### Kubernetes integration:
-lifecycle:  
-  preStop:  
-   exec:  
-       command: ["/bin/sh", "-c", "sleep 15"]  
+### Kubernetes integration:  
+
+    lifecycle:  
+        preStop:  
+            exec:  
+            command: ["/bin/sh", "-c", "sleep 15"]  
 15 second grace period ensure final metrics export before pod termination.
 
 # Scaling  
@@ -203,28 +204,31 @@ lifecycle:
 
 # Kubernetes manifest configuration
 ## Sidecar container specification  
-
-- name: otel-metrics-bridge
-  image: ml-metrics-bridge:latest
-  imagePullPolicy: IfNotPresent  
+    - name: otel-metrics-bridge  
+      image: ml-metrics-bridge:latest  
+      imagePullPolicy: IfNotPresent  
 
 ### Key configurations:
-1.**REsource limits:** conservative allocation    
+1.**REsource limits:** conservative allocation  
     - Requests: 128Mi RAM, 100m CPU  
     - Limits: 256Mi RAM, 200m CPU  
-    - Reason: metrics collection is lightweight    
+    - Reason: metrics collection is lightweight  
+
 2.**Environment variables:** explicit configuration  
-    - name: OTEL_EXPORTER_OTLP_ENDPOINT
-     value: "otel-collector:4317"  
-  - using k8s DNS for service discovery  
-  - no hardcoded IPs  
-3.**Volume Mount:** Read only access   
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT  
+      value: "otel-collector:4317"  
+    - using k8s DNS for service discovery  
+    - no hardcoded IPs  
+
+3.**Volume Mount:** Read only access  
+    ```python
     volumeMounts:
      - name: metrics-volume
        mountPath: /shared/metrics
        readOnly: true  
     - principle of least privilege  
-    - prevents accidental file modification  
+    - prevents accidental file modification 
+    ``` 
 4.**Lifecycle hooks:** Graceful termination  
     lifecycle:
      preStop:
