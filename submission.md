@@ -62,12 +62,11 @@ This implementation provides a production ready sidecar container which collects
 ### Alternative architectures considered
 ### Push vs Pull model
 **Rejected: having ML job push directly to Otel**
-
-**Why rejected:**
+- **Why rejected:**
 - it requires modifying ML training code
 - created coupling bewteen training logic and observability
 - harder to update observability without retraining
-**Trade off:** Sidecar adds slight complexitybut maintains separation.
+- **Trade off:** Sidecar adds slight complexitybut maintains separation.
 
 ### Agent vs SIdecar pattern
 **Rejected: Node level deamonset agent**
