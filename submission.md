@@ -96,9 +96,9 @@ This implementation provides a production ready sidecar container which collects
 - **Trade off:** otlp is push based and fits job pattern better
 
 ### Json file format  
-continue using json format,  
-    - it is easy for debugging and human readable
-    - it is widely supported as any language can write
+  Continue using json format,  
+    - it is easy for debugging and human readable  
+    - it is widely supported as any language can write  
     - it doesnt break exiting ml jobs
 
 ## Security Considerations:
@@ -107,10 +107,11 @@ continue using json format,
 - Otel collector end points
 - Pod resou\rces    
 **Insecure grpc conection:**  
+```python
 exporter = OTLPMetricExporter(
     endpoint=self.config.otel_endpoint,
-    insecure=True
-)  
+    insecure=True)
+``` 
 **Note:** insecure=true for internal cluster communication  
 Currently no TLS for otlp is present. In production env, enabling tls for otlp with cert manager is recommended.
 
