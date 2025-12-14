@@ -89,7 +89,7 @@ This implementation provides a production ready sidecar container which collects
 
 ### Direct Prometheus exposition vs Otlp
 **Rejected: Sidecar with metrics endpoint**
-- **WHy rejected:**
+- **Why rejected:**
     - it requires prometheus to scrape every pod
     - it is harder to add tracing or logs later
     - pull model doesnt fit ephemeral jobs well
@@ -142,10 +142,11 @@ Environment based configuration with validation
     - *LOG_LEVEL*  
 
 ### Error handling strategy
-**1.File not found**
-if not metrics_path.exists():
-    self.logger.debug("Metrics file does not exist yet")
-    return None  
+**1. File not found**  
+    if not metrics_path.exists():
+        self.logger.debug("Metrics file does not exist yet")
+        return 
+            None  
 **Scenario**: Sidecar starts before ML job writes first metrics  
 **Handling**: Log at DEBUG level, continue polling. This is expected behaviour.
 
