@@ -118,17 +118,13 @@ This implementation provides a production ready sidecar container which collects
 **Note**: This mapping follows otel semantic convention.
 
 ### Configuration management
-Environment based configuration with validation
+Environment based configuration with validation  
     - *OTEL_EXPORTER_OTLP_ENDPOINT*  
-
     - *OTEL_SERVICE_NAME*  
-
     - *METRICS_FILE_PATH*  
-
     - *COLLECTION_INTERVAL*  
-
     - *LOG_LEVEL*  
-    
+
 
 ### Error handling strategy
 **1.File not found**
