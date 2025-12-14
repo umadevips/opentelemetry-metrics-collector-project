@@ -70,27 +70,27 @@ This implementation provides a production ready sidecar container which collects
 
 ### Agent vs SIdecar pattern
 **Rejected: Node level deamonset agent**
-**Why rejected:**
-- shared agent created blast radius which affects all pods on node
-- harder to version per job
-- volume sharing across pods is complex
-**Trade off:** Per pod sidecar uses more resources but better isolation
+- **Why rejected:**
+    - shared agent created blast radius which affects all pods on node
+    - harder to version per job
+    - volume sharing across pods is complex
+- **Trade off:** Per pod sidecar uses more resources but better isolation
 
 ### Event-driven vs Polling
 **Rejected: File system watching (inotify)**
-**WHy rejected:**
-- platform specific to linux only
-- more complex error handling
-- all container runtimes do not support inotify
-**trafe off:** 10s latency is ok for traning metrics
+- **WHy rejected:**
+    - platform specific to linux only
+    - more complex error handling
+    - all container runtimes do not support inotify
+- **trafe off:** 10s latency is ok for traning metrics
 
 ### Direct Prometheus exposition vs Otlp
 **Rejected: Sidecar with metrics endpoint**
-**WHy rejected:**
-- it requires prometheus to scrape every pod
-- it is harder to add tracing or logs later
-- pull model doesnt fit ephemeral jobs well
-**Trade off:** otlp is push based and fits job pattern better
+- **WHy rejected:**
+    - it requires prometheus to scrape every pod
+    - it is harder to add tracing or logs later
+    - pull model doesnt fit ephemeral jobs well
+- **Trade off:** otlp is push based and fits job pattern better
 
 ## Sidecar pattern benefits
 1. No modification to ML code is required
@@ -119,11 +119,16 @@ This implementation provides a production ready sidecar container which collects
 
 ### Configuration management
 Environment based configuration with validation
-    - OTEL_EXPORTER_OTLP_ENDPOINT
-    - OTEL_SERVICE_NAME
-    - METRICS_FILE_PATH
-    - COLLECTION_INTERVAL
-    - LOG_LEVEL
+    - *OTEL_EXPORTER_OTLP_ENDPOINT*  
+
+    - *OTEL_SERVICE_NAME*  
+
+    - *METRICS_FILE_PATH*  
+
+    - *COLLECTION_INTERVAL*  
+
+    - *LOG_LEVEL*  
+    
 
 ### Error handling strategy
 **1.File not found**
