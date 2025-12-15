@@ -1,16 +1,24 @@
 """
 Configuration management for the metrics bridge.
 
-TODO: Implement configuration loading from environment variables with proper
-defaults and validation.
+Loads configuration from environment variables with validation and sensible defaults.
+Supports all required configuration parameters for OpenTelemetry integration.
 
-Environment variables to support:
-- OTEL_EXPORTER_OTLP_ENDPOINT: Collector endpoint (default: "http://localhost:4317")
-- OTEL_SERVICE_NAME: Service name (default: "ml-metrics-bridge")
-- METRICS_FILE_PATH: Path to metrics file (default: "/shared/metrics/current.json")
-- COLLECTION_INTERVAL: Interval in seconds (default: "10")
-- LOG_LEVEL: Logging level (default: "INFO")
-
+Environment Variables:
+    OTEL_EXPORTER_OTLP_ENDPOINT: OpenTelemetry Collector gRPC endpoint
+        Default: "http://localhost:4317"
+        
+    OTEL_SERVICE_NAME: Service identifier for telemetry
+        Default: "ml-metrics-bridge"
+        
+    METRICS_FILE_PATH: Path to JSON metrics file
+        Default: "/shared/metrics/current.json"
+        
+    COLLECTION_INTERVAL: Polling frequency in seconds (minimum: 1)
+        Default: "10"
+        
+    LOG_LEVEL: Logging verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        Default: "INFO"
 """
 
 import os

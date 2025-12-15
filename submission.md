@@ -7,9 +7,9 @@ Your documentation here
 # Metrics Bridge Sidecar Implementation using Python
 
 ## Overview
-This implementation provides a production ready sidecar container which collects the ML training metrics from a shared json file, converts the metrics to telemtry supported instruments and sends to the otel collector using otlp and further sends these metrics to the backend of our choice which is prometheus in this use case.
+This implementation provides a production ready sidecar container which collects the ML training metrics from a shared json file, converts the metrics to telemetry supported instruments and sends to the otel collector using otlp and further sends these metrics to the backend of our choice which is prometheus in this use case.
 
-## Key decisions:
+### Key decisions:
 
 - **Architecture:** Sidecar pattern chosen over alternatives (node agent, push model) for isolation and flexibility
 - **Metric Instruments:** Observable pattern for consistency, appropriate type selection (Gauge/Counter/Histogram)
@@ -22,12 +22,12 @@ This implementation provides a production ready sidecar container which collects
 ```
 
 ┌─────────────────────────────────────────────────────────┐
-│                    Kubernetes Pod / Docker Network      │
+│                    Kubernetes Pod                       │
 │                                                         │
 │  ┌─────────────────┐         ┌──────────────────────┐   │
 │  │  ML Training    │         │  OTel Metrics Bridge │   │
 │  │  Container      │         │  Sidecar             │   │
-│  │                 │ pull-based                     │   │
+│  │                 │                                │   │
 │  │  Writes JSON ──────────>  │  Reads JSON          │   │
 │  │  to /shared     │         │  Converts to OTel    │   │
 │  └─────────────────┘         │  Exports via OTLP    │   │
@@ -37,12 +37,12 @@ This implementation provides a production ready sidecar container which collects
 │       (shared/metrics/current.json)                     │
 └─────────────────────────────────────────────────────────┘
                                          │
-                                         │ OTLP
+                                         │ OTLP/gRPC
                                          ▼
                     ┌────────────────────────┐
                     │  OpenTelemetry         │
                     │  Collector             │
-                    │  ┌──────────────────┐  │(push based)
+                    │  ┌──────────────────┐  │
                     │  │ Receives OTLP    │  │
                     │  │                  │  │
                     │  │ Export Prometheus|  │
@@ -53,13 +53,13 @@ This implementation provides a production ready sidecar container which collects
                                  ▼
                     ┌────────────────────────┐
                     │  Prometheus            │
-                    │  (Verification)        │
+                    │                        │
                     └────────────────────────┘
 ```
 ## Sidecar pattern benefits
 1. No modification to ML code is required
 2. Training logic separates from observability
-3. Same sidecar works with any json wirting job
+3. Same sidecar works with any json writing job
 4. Training continues even if metrics export fails
 
 ### Alternative architectures considered
@@ -67,12 +67,12 @@ This implementation provides a production ready sidecar container which collects
 **Rejected: having ML job push directly to Otel**
 - **Why rejected:**
     - it requires modifying ML training code
-    - created coupling bewteen training logic and observability
+    - created coupling between training logic and observability
     - harder to update observability without retraining
-- **Trade off:** Sidecar adds slight complexitybut maintains separation.
+- **Trade off:** Sidecar adds slight complexity but maintains separation.
 
 ### Agent vs SIdecar pattern
-**Rejected: Node level deamonset agent**
+**Rejected: Node level daemonset agent**
 - **Why rejected:**
     - shared agent created blast radius which affects all pods on node
     - harder to version per job
@@ -85,7 +85,7 @@ This implementation provides a production ready sidecar container which collects
     - platform specific to linux only
     - more complex error handling
     - all container runtimes do not support inotify
-- **trafe off:** 10s latency is ok for traning metrics
+- **trade off:** 10s latency is ok for training metrics
 
 ### Direct Prometheus exposition vs Otlp
 **Rejected: Sidecar with metrics endpoint**
@@ -99,14 +99,14 @@ This implementation provides a production ready sidecar container which collects
   Continue using json format,  
     - it is easy for debugging and human readable  
     - it is widely supported as any language can write  
-    - it doesnt break exiting ml jobs
+    - it doesnt break existing ml jobs
 
 ## Security Considerations:
 **Assets to protect:**
 - ML training metrics
 - Otel collector end points
 - Pod resou\rces    
-**Insecure grpc conection:**  
+**Insecure grpc connection:**  
 ```python
 exporter = OTLPMetricExporter(
     endpoint=self.config.otel_endpoint,
@@ -122,7 +122,7 @@ Currently no TLS for otlp is present. In production env, enabling tls for otlp w
 - **ml.validation.loss**: validation loss represents current model performance
 - **ml.training.accuracy**: accuracy metric
 - **ml.training.learning_rate**: it changes during training
-- **ml.training.gpu_utilization**: real time gpu usagepercentage
+- **ml.training.gpu_utilization**: real time gpu usage percentage
 
 ### Counters (monotonically increasing values)
 - **ml.training.batch_number**: cumulative batch count
@@ -130,68 +130,75 @@ Currently no TLS for otlp is present. In production env, enabling tls for otlp w
 
 ### Histograms (distribution of values over time)
 - **ml.training.processing_time**: batch processing time distribution
-- **ml.training.samples_per_second**: throughput ditribution
+- **ml.training.samples_per_second**: throughput distribution
 
 **Note**: This mapping follows otel semantic convention.
 
-### Configuration management
-Environment based configuration with validation  
-    - *OTEL_EXPORTER_OTLP_ENDPOINT*  
-    - *OTEL_SERVICE_NAME*  
-    - *METRICS_FILE_PATH*  
-    - *COLLECTION_INTERVAL*  
-    - *LOG_LEVEL*  
+## Configuration management
+Environment based configuration with validation:  
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - OpenTelemetry Collector endpoint
+- `OTEL_SERVICE_NAME` - Service identifier
+- `METRICS_FILE_PATH` - Path to metrics JSON file
+- `COLLECTION_INTERVAL` - Polling frequency in seconds
+- `LOG_LEVEL` - Logging verbosity
 
-### Error handling strategy
-**1. File not found**  
-    if not metrics_path.exists():  
-        self.logger.debug("Metrics file does not exist yet")  
-        return 
-            None  
-**Scenario**: Sidecar starts before ML job writes first metrics  
-**Handling**: Log at DEBUG level, continue polling. This is expected behaviour.
+## Error handling strategy
+**1. File not found** (cold start scenario) 
+```python
+if not metrics_path.exists():  
+    self.logger.debug("Metrics file does not exist yet")  
+    return None  
+```
+**Scenario:** Sidecar starts before ML job writes first metrics  
+**Handling:** Log at DEBUG level, continue polling. This is expected behaviour.
 
 **2. Malformed Json**  
-    except json.JSONDecodeError as e:  
-        self.logger.error(f"Failed to parse metrics JSON: {e}")  
-        return  
-            None  
-**Scenario**: Partial write, corrupted file, invalid format  
-**Handling**: Log error, skip this iteration, continue polling
+```python
+except json.JSONDecodeError as e:  
+    self.logger.error(f"Failed to parse metrics JSON: {e}")  
+    return None  
+```
+**Scenario:** Partial write, corrupted file, invalid format  
+**Handling:** Log error, skip this iteration, continue polling
 
 **3. Network failure (OTLP export)**  
-Opentelemetry SDK handles exportretries automatically  
-    - Queuing of metrics during outages  
-    - Automatic reconnection  
-**Handling**: rely on SDK and log only critical features
+Opentelemetry SDK provides automatic retry logic:  
+- Queuing of metrics during outages  
+- Automatic reconnection  
+**Handling:** rely on SDK and log only critical features
 
 **4. Resource exhaustion**  
+```yaml
 resources:
-    requests:
-        memory: "128Mi"
-        cpu: "100m"
-    limits:
-        memory: "256Mi"
-        cpu: "200m"  
-**Protection**:  
-    - Memory limits prevent OOM  
-    - CPU limits prevent starving main container
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m" 
+``` 
+**Protection Mechanisms**:  
+    - Memory limits prevent OOM by killing other containers 
+    - CPU limits prevent starving main ml container
     
 **5. Graceful shutdown**  
+```python
     signal.signal(signal.SIGTERM, self._signal_handler)  
-    signal.signal(signal.SIGINT, self._signal_handler)  
-    **On SIGTERM/SIGINIT:**  
+    signal.signal(signal.SIGINT, self._signal_handler) 
+ ``` 
+    **Shutdown sequence (on SIGTERM/SIGINT):**  
     1. Stop collection loop  
     2. Flush remaining metrics via provider.shutdown()  
     3. Complete pending exports  
     4. Exit cleanly
 
 ### Kubernetes integration:  
-
-    lifecycle:  
-        preStop:  
-            exec:  
-            command: ["/bin/sh", "-c", "sleep 15"]  
+```yaml
+lifecycle:  
+  preStop:  
+    exec:  
+      command: ["/bin/sh", "-c", "sleep 15"]  
+```
 15 second grace period ensure final metrics export before pod termination.
 
 # Scaling  
@@ -205,52 +212,62 @@ resources:
 
 # Kubernetes manifest configuration
 ## Sidecar container specification  
+```python
     - name: otel-metrics-bridge  
       image: ml-metrics-bridge:latest  
       imagePullPolicy: IfNotPresent  
+```
 
 ### Key configurations:
-1.**REsource limits:** conservative allocation  
-    - Requests: 128Mi RAM, 100m CPU  
-    - Limits: 256Mi RAM, 200m CPU  
-    - Reason: metrics collection is lightweight  
+1. **REsource limits:** conservative allocation  
 
-2.**Environment variables:** explicit configuration  
-    - name: OTEL_EXPORTER_OTLP_ENDPOINT  
-      value: "otel-collector:4317"  
-    - using k8s DNS for service discovery  
-    - no hardcoded IPs  
+- Requests: 128Mi RAM, 100m CPU  
+- Limits: 256Mi RAM, 200m CPU  
+- Reason: metrics collection is lightweight  
 
-3.**Volume Mount:** Read only access  
-    ```python
-    volumeMounts:
-     - name: metrics-volume
-       mountPath: /shared/metrics
-       readOnly: true  
+2. **Environment variables:** explicit configuration  
+- name: OTEL_EXPORTER_OTLP_ENDPOINT  
+  value: "otel-collector:4317"  
+- using k8s DNS for service discovery  
+- no hardcoded IPs  
+
+3. **Volume Mount:** Read only access  
+volumeMounts:  
+    - name: metrics-volume  
+      mountPath: /shared/metrics  
+      readOnly: true  
     - principle of least privilege  
-    - prevents accidental file modification 
-    ``` 
-4.**Lifecycle hooks:** Graceful termination  
-    lifecycle:
-     preStop:
+    - prevents accidental file modification  
+
+4. **Lifecycle hooks:** Graceful termination  
+```python
+lifecycle:  
+    preStop:
        exec:
          command: ["/bin/sh", "-c", "sleep 15"]  
-    - allows final metric export  
-    - coordinates with k8s termination grace period  
+```  
+- allows final metric export  
+- coordinates with k8s termination grace period  
 
-## Volume configuartion
+## Volume configuration
+```yml
     volumes:
   - name: metrics-volume
     emptyDir: {}  
-  - automatic cleanup on pod deletion  
-  - fast and no external dependecies
+```  
+- automatic cleanup on pod deletion    
+- fast and no external dependencies
 
 # Testing approach
-### 1.Local development tetsing
-**Terminal 1: Start infrastructure**
-docker-compose up otel-collector prometheus mock-ml-job
+### 1. Local development testing
+**Terminal 1: Start infrastructure**  
+```bash
+    docker-compose up otel-collector prometheus mock-ml-job
+```
 
-**Terminal 2: Build and run sidecar**
+**Terminal 2: Build and run sidecar**  
+
+```bash
 cd sidecar-python
 python -m venv venv
 source venv/bin/activate
@@ -258,50 +275,69 @@ pip install -r requirements.txt
 export OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
 export METRICS_FILE_PATH=/tmp/metrics/current.json
 python main.py  
+```  
 
 **Validation**  
     1. check sidecar logs for successful initialization  
     2. verify otlp connection to collector  
     3. monitor metric exports every 10s  
 
-### 2.Docker compose testing  
-    # Build and start all services
+### 2. Docker compose testing  
+Build and start all services
+```bash
 docker-compose up --build
+```  
 
-# Verify services running
+Verify services running
+```bash
 docker-compose ps
-
-# Check sidecar logs
+```  
+Check sidecar logs
+```bash
 docker-compose logs -f sidecar-python
-
-# Verify metrics in Prometheus
+```  
+Verify metrics in Prometheus
 open http://localhost:9090
-# Query: ml_training_loss  
+Query: ml_training_loss  
 
-**Test scenarios:**
- 
-### 3.Kubernetes testing
- Check pod status
+### 3.Kubernetes testing  
+Check pod status
+```bash
 kubectl get pods -n ml-otel-demo -w
+```
+**View sidecar logs**  
+```bash
+kubectl logs -n ml-otel-demo ml-training-<pod-id> -c otel-metrics-bridge -f
+```  
+**Deploy ML training job with sidecar**  
+```bash
+kubectl apply -f k8s/ml-training-job.yaml  
+```
 
 ### 4. Error condition testing  
 **Testcase 1: Missing metrics file**  
 - Start sidecar without ML job
-    docker-compose up sidecar-python  
+```bash
+    docker-compose up sidecar-python 
+``` 
 **Expected:** DEBUG logs "Metrics file does not exist yet"  
 Sidecar should continue running, polling
 
 **Testcase 2: Malformed Json** 
 - Write invalid JSON  
+```bash
     echo "invalid json" > /path/to/metrics/current.json  
-**Expected:** ERROR log with JSON parse error
+```
+**Expected:**  ERROR log with JSON parse error  
 Sidecar continues, next poll succeeds when file corrected  
  
 **Testcase 3: Collector unavailable**  
 - Stop collector
-    docker-compose stop otel-collector  
-**Expected:** OpenTelemetry SDK retries with backoff
-Metrics queued in memory
+```bash
+    docker-compose stop otel-collector 
+``` 
+**Expected:** OpenTelemetry SDK retries with backoff  
+Metrics queued in memory  
 Resume exporting when collector restarts
 
 **Testcase 4: Resource limits**
@@ -309,31 +345,26 @@ Resume exporting when collector restarts
     limits:
      memory: "64Mi"  
 - Monitor pod
+```bash
     kubectl top pods -n ml-otel-demo  
-**Expected:** Potential OOMKill if limit too low
-Adjust limits based on actual usage patterns   
+```
+**Expected:** Potential OOMKill if limit too low  
+    Adjust limits based on actual usage patterns   
 
 ### Performance testing
 - Increase metric write frequency  
+```bash
     export WRITE_INTERVAL=1
     export COLLECTION_INTERVAL=1
+```
 - Monitor resource usage  
+```bash
     docker stats sidecar-python
+```
 **Expected metrics:**
     - CPU: < 5% steady state
     - Memory: < 50Mi steady state
-    - Network: < 1Mbps
-
-
-# View sidecar logs
-kubectl logs -n ml-otel-demo ml-training-<pod-id> -c otel-metrics-bridge -f  
-
-# Deploy ML training job with sidecar
-kubectl apply -f k8s/ml-training-job.yaml  
-
-## Validation queries:
-**Check metric availability**
-ml_training_loss  
+    - Network: < 1Mbps  
 
 
 
@@ -358,31 +389,6 @@ ml_training_loss
 
 
 
-
-
-
-
-
-**Observability Lifecycle Scenarios**  
-**1. Cold start (sidecar before ML job)**  
-- Sidecar container starts first  
-- ML job container initializes later  
-- Sidecar waits and begins scraping metrics once the ML job endpoint is available  
-
-**2. Normal operation (continuous metrics)**  
-- ML job exposes metrics continuously  
-- Sidecar polls the metrics endpoint at a fixed interval (e.g., every 10 seconds)  
-- Metrics are forwarded to the OpenTelemetry Collector  
-
-**3. ML job restart (sidecar continues)**  
-- ML job container restarts due to failure or redeployment  
-- Sidecar remains running  
-- Sidecar automatically resumes metric collection once the ML job is back up  
-
-**4. Network interruption (collector down)**  
-- Sidecar cannot reach the OpenTelemetry Collector  
-- Metrics are temporarily buffered or retried (depending on configuration)  
-- Export resumes automatically when the collector becomes available again     
 
 
 

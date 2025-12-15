@@ -65,8 +65,6 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       - metrics-data:/shared/metrics:ro
-    ports:
-      - "8000:8000" # sidecar prometheus endpoint for internal metrics
     depends_on:
       - otel-collector
     restart: unless-stopped

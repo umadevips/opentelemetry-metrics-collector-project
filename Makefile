@@ -56,7 +56,10 @@ verify: ## Verify that metrics are flowing to Prometheus
 
 logs-sidecar-python: ## View Python sidecar logs
 	docker compose logs -f sidecar-python
-docker manifest inspect ghcr.io/openteams-ai/mock-ml-job@sha256:ae8db0c63302730daeb7d4493aec2233f13d94b2ccd779fa64a0d86cc402cd88
+# The following manifest inspect line was accidentally placed here and
+# created a spurious make target (it also triggers a 'command not found'
+# when Docker is not installed). Commenting it out.
+# docker manifest inspect ghcr.io/openteams-ai/mock-ml-job@sha256:ae8db0c63302730daeb7d4493aec2233f13d94b2ccd779fa64a0d86cc402cd88
 logs-sidecar-go: ## View Go sidecar logs
 	docker compose logs -f sidecar-go
 
