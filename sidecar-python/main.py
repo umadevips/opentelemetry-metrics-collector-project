@@ -5,15 +5,6 @@ OpenTelemetry Metrics Bridge Sidecar
 This sidecar collects ML training metrics from a shared volume
 and exports them via OpenTelemetry Protocol (OTLP).
 
-TODO: Implement the following:
-1. Initialize OpenTelemetry SDK with OTLP exporter
-2. Create appropriate metric instruments (Gauge, Counter, Histogram)
-3. Read metrics from the shared JSON file
-4. Convert ML metrics to OpenTelemetry format with attributes
-5. Implement collection loop with error handling
-6. Handle graceful shutdown
-"""
-
 #!/usr/bin/env python3
 """
 OpenTelemetry Metrics Bridge Sidecar
