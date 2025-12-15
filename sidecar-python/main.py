@@ -4,13 +4,6 @@ OpenTelemetry Metrics Bridge Sidecar
 
 This sidecar collects ML training metrics from a shared volume
 and exports them via OpenTelemetry Protocol (OTLP).
-
-#!/usr/bin/env python3
-"""
-OpenTelemetry Metrics Bridge Sidecar
-
-This sidecar collects ML training metrics from a shared volume
-and exports them via OpenTelemetry Protocol (OTLP).
 """
 import json
 import logging
