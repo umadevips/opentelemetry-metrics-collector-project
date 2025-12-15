@@ -1,8 +1,3 @@
-Submission: OpenTelemetry Metrics Bridge Implementation
-Document your implementation: design choices, architectural decisions, trade-offs, error handling strategy, Kubernetes manifest configuration, and testing approach.
-
-Your documentation here
-
 # Submission
 # Metrics Bridge Sidecar Implementation using Python
 
@@ -361,9 +356,9 @@ Resume exporting when collector restarts
 ```bash
     docker stats sidecar-python
 ```
-**Expected metrics:**
-    - CPU: < 5% steady state
-    - Memory: < 50Mi steady state
+**Expected metrics:**  
+    - CPU: < 5% steady state  
+    - Memory: < 50Mi steady state  
     - Network: < 1Mbps  
 
 
