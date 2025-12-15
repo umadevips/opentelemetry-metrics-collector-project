@@ -14,16 +14,6 @@ data:
   BATCHES_PER_EPOCH: "50"
 
 ---
-# TODO: Complete this Job manifest with sidecar pattern
-#
-#
-# Your task:
-# - Add a sidecar container (Python or Go) to this Job
-# - Configure the sidecar with appropriate environment variables
-# - Mount the shared volume in both containers
-# - Ensure proper resource limits
-# - Don't worry about  a registry for the sidecar image, just put the image name.
-#   We will push to a registry when evaluating
 
 apiVersion: batch/v1
 kind: Job
@@ -67,7 +57,7 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1000m"
-# OpenTelemetry Metrics Bridge Sidecar
+        # OpenTelemetry Metrics Bridge Sidecar
         - name: otel-metrics-bridge
           image: ml-metrics-bridge:latest
           imagePullPolicy: IfNotPresent
